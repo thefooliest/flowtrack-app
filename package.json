@@ -1,8 +1,9 @@
 {
-  "name": "flowtrack",
+  "name": "flowtrack-app",
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "homepage": "https://thefooliest.github.io/flowtrack-app/",
   "scripts": {
     "dev": "vite",
     "dev:https": "vite --https",
@@ -14,7 +15,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-basic-ssl": "^1.1.0",
+    "gh-pages":"^6.1.1",
     "@vitejs/plugin-react": "^4.3.1",
     "vite": "^5.4.2"
   }
