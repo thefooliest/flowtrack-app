@@ -1,0 +1,18 @@
+{
+  "name": "FlowTrack",
+  "short_name": "FlowTrack",
+  "description": "Tracker de actividades y procesos",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#6ee7b7",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
