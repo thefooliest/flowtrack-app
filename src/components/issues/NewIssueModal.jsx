@@ -7,19 +7,31 @@ export default function NewIssueModal({ db, onClose, onSave }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState([]);
-  const [relatedActivityId, setRelatedActivityId] = useState("");
+  const [relatedActivities, setRelatedActivities] = useState([]);
   const activities = db.getActivities().filter((a) => !a.parentId);
+
+  const toggleActivity = (id) => {
+    setRelatedActivities((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const handleSave = () => {
     if (!title.trim()) return;
+    const tagIds = tags.map((t) => {
+      const existing = db.getTag(t.id);
+      if (!existing) return db.findOrCreateTag(t.name).id;
+      return t.id;
+    });
+
     const issue = {
       id: uid(),
       title: title.trim(),
       description: description.trim(),
-      tags: tags.map((t) => t.id),
+      tags: tagIds,
       status: "open",
-      solutions: [],
-      relatedActivities: relatedActivityId ? [relatedActivityId] : [],
+      relatedActivities,
+      linkedIdeas: [],
       createdAt: now(),
       resolvedAt: null,
     };
@@ -30,47 +42,32 @@ export default function NewIssueModal({ db, onClose, onSave }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-title">Nuevo problema</div>
-
         <div className="form-group">
           <label className="form-label">Título</label>
-          <input
-            className="form-input"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="¿Qué problema o conflicto surgió?"
-            autoFocus
-          />
+          <input className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="¿Qué problema o conflicto surgió?" autoFocus />
         </div>
-
         <div className="form-group">
           <label className="form-label">Descripción</label>
-          <textarea
-            className="form-input"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Contexto, impacto, qué lo causa..."
-            rows={3}
-          />
+          <textarea className="form-input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Contexto, impacto, qué lo causa..." rows={3} />
         </div>
-
         <div className="form-group">
           <label className="form-label">Etiquetas</label>
           <TagInput db={db} selectedTags={tags} onChange={setTags} />
         </div>
 
-        <div className="form-group">
-          <label className="form-label">Actividad relacionada (opcional)</label>
-          <select
-            className="form-input"
-            value={relatedActivityId}
-            onChange={(e) => setRelatedActivityId(e.target.value)}
-          >
-            <option value="">Sin vincular</option>
-            {activities.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
-          </select>
-        </div>
+        {activities.length > 0 && (
+          <div className="form-group">
+            <label className="form-label">Actividades relacionadas</label>
+            <div className="relation-list">
+              {activities.map((a) => (
+                <label key={a.id} className="relation-item">
+                  <input type="checkbox" checked={relatedActivities.includes(a.id)} onChange={() => toggleActivity(a.id)} style={{ accentColor: "var(--accent)" }} />
+                  <span>{a.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
           <button className="btn" onClick={onClose}>Cancelar</button>

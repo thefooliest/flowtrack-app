@@ -3,7 +3,10 @@ import TagPill from "./TagPill";
 
 export default function TagInput({ db, selectedTags, onChange }) {
   const [input, setInput] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
   const inputRef = useRef(null);
+
+  // Re-read tags from DB each render to pick up newly created ones
   const allTags = db.getTags();
 
   const suggestions = allTags
@@ -17,6 +20,7 @@ export default function TagInput({ db, selectedTags, onChange }) {
   const addTag = (tag) => {
     onChange([...selectedTags, tag]);
     setInput("");
+    setRefreshKey((k) => k + 1);
   };
 
   const removeTag = (id) => {
@@ -26,7 +30,8 @@ export default function TagInput({ db, selectedTags, onChange }) {
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && input.trim()) {
       e.preventDefault();
-      addTag(db.findOrCreateTag(input.trim()));
+      const tag = db.findOrCreateTag(input.trim());
+      addTag(tag);
     }
     if (e.key === "Backspace" && input === "" && selectedTags.length > 0) {
       removeTag(selectedTags[selectedTags.length - 1].id);
@@ -47,7 +52,7 @@ export default function TagInput({ db, selectedTags, onChange }) {
           placeholder={selectedTags.length ? "" : "Escribe y presiona Enter..."}
         />
       </div>
-      {suggestions.length > 0 && (
+      {(input.length > 0 || suggestions.length > 0) && suggestions.length > 0 && (
         <div className="tag-suggestions">
           {suggestions.map((t) => (
             <span key={t.id} className="tag-suggestion" onClick={() => addTag(t)}>

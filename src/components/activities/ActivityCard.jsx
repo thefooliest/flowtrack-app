@@ -9,11 +9,23 @@ export default function ActivityCard({ activity, db, onClick, onAction, onNewSub
   const isActive = activity.status === "active";
   const isPaused = activity.status === "paused";
 
+  // Show parent name if it's a subtask
+  const parent =
+    activity.parentId && activity.parentType === "activity"
+      ? db.getActivity(activity.parentId)
+      : null;
+
   return (
     <div
       className={`activity-card ${isActive ? "is-active" : ""} ${isPaused ? "is-paused" : ""}`}
       onClick={onClick}
     >
+      {parent && (
+        <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
+          <Icon name="subtask" size={10} /> Sub-tarea de <strong style={{ color: "var(--text-secondary)" }}>{parent.name}</strong>
+        </div>
+      )}
+
       <div className="card-top">
         <span className="card-name">{activity.name}</span>
         <span className={`card-status status-${activity.status}`}>
@@ -49,14 +61,9 @@ export default function ActivityCard({ activity, db, onClick, onAction, onNewSub
           </>
         )}
         {isPaused && (
-          <>
-            <button className="btn btn-xs btn-accent" onClick={() => onAction("resume", activity.id)}>
-              <Icon name="play" size={12} /> Reanudar
-            </button>
-            <button className="btn btn-xs" onClick={() => onAction("complete", activity.id)}>
-              <Icon name="stop" size={12} /> Completar
-            </button>
-          </>
+          <button className="btn btn-xs btn-accent" onClick={() => onAction("resume", activity.id)}>
+            <Icon name="play" size={12} /> Reanudar
+          </button>
         )}
         {activity.status === "completed" && (
           <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>

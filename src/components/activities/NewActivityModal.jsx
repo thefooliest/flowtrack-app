@@ -19,7 +19,17 @@ export default function NewActivityModal({ db, onClose, onSave, parentId = null 
 
   const handleSave = () => {
     if (!name.trim()) return;
-    const tagIds = tags.map((t) => t.id);
+
+    // Ensure all tags exist in DB and collect their IDs
+    const tagIds = tags.map((t) => {
+      const existing = db.getTag(t.id);
+      if (!existing) {
+        const created = db.findOrCreateTag(t.name);
+        return created.id;
+      }
+      return t.id;
+    });
+
     const activity = {
       id: uid(),
       name: name.trim(),
@@ -33,21 +43,15 @@ export default function NewActivityModal({ db, onClose, onSave, parentId = null 
       createdAt: now(),
     };
 
-    tagIds.forEach((tid) => {
-      const tag = db.getTag(tid);
-      if (tag && !tag.activityList.includes(activity.id)) {
-        db.updateTag(tid, { activityList: [...tag.activityList, activity.id] });
-      }
-    });
-
     if (saveAsTemplate && !templateId) {
-      db.addTemplate({
+      const newTemplate = db.addTemplate({
         id: uid(),
         name: name.trim(),
         defaultTags: tagIds,
         isRecurring: true,
         createdAt: now(),
       });
+      activity.templateId = newTemplate.id;
     }
 
     onSave(activity);
@@ -71,11 +75,7 @@ export default function NewActivityModal({ db, onClose, onSave, parentId = null 
                     <div className="template-name">{t.name}</div>
                     <div className="template-tags">
                       {tt.map((tg) => (
-                        <span
-                          key={tg.id}
-                          className="template-tag"
-                          style={{ background: tg.color + "20", color: tg.color }}
-                        >
+                        <span key={tg.id} className="template-tag" style={{ background: tg.color + "20", color: tg.color }}>
                           {tg.name}
                         </span>
                       ))}
@@ -89,45 +89,20 @@ export default function NewActivityModal({ db, onClose, onSave, parentId = null 
 
         <div className="form-group">
           <label className="form-label">Nombre</label>
-          <input
-            className="form-input"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="¿Qué vas a hacer?"
-            autoFocus
-          />
+          <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="¿Qué vas a hacer?" autoFocus />
         </div>
-
         <div className="form-group">
           <label className="form-label">Etiquetas</label>
           <TagInput db={db} selectedTags={tags} onChange={setTags} />
         </div>
-
         <div className="form-group">
           <label className="form-label">Notas (opcional)</label>
-          <textarea
-            className="form-input"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Contexto, objetivo, detalles..."
-            rows={2}
-          />
+          <textarea className="form-input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Contexto, objetivo, detalles..." rows={2} />
         </div>
 
         {!templateId && !parentId && (
-          <label
-            style={{
-              display: "flex", alignItems: "center", gap: 8,
-              fontSize: "0.85rem", color: "var(--text-secondary)",
-              cursor: "pointer", marginBottom: 16,
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={saveAsTemplate}
-              onChange={(e) => setSaveAsTemplate(e.target.checked)}
-              style={{ accentColor: "var(--accent)" }}
-            />
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.85rem", color: "var(--text-secondary)", cursor: "pointer", marginBottom: 16 }}>
+            <input type="checkbox" checked={saveAsTemplate} onChange={(e) => setSaveAsTemplate(e.target.checked)} style={{ accentColor: "var(--accent)" }} />
             Guardar como plantilla
           </label>
         )}

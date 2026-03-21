@@ -3,9 +3,11 @@ import { uid, TAG_COLORS } from "./utils";
 const EMPTY_DATA = {
   activities: [],
   tags: [],
+  tagLists: [],
   templates: [],
   processes: [],
   issues: [],
+  ideas: [],
 };
 
 export function createDB() {
@@ -14,9 +16,7 @@ export function createDB() {
   const save = () => {
     try {
       localStorage.setItem("flowtrack_db", JSON.stringify(data));
-    } catch (e) {
-      /* quota exceeded or unavailable */
-    }
+    } catch (e) {}
   };
 
   const load = () => {
@@ -25,13 +25,51 @@ export function createDB() {
       if (stored) {
         const parsed = JSON.parse(stored);
         data = { ...EMPTY_DATA, ...parsed };
+        if (!data.tagLists) data.tagLists = [];
+        if (!data.ideas) data.ideas = [];
       }
-    } catch (e) {
-      /* corrupt data, start fresh */
-    }
+    } catch (e) {}
   };
 
   load();
+
+  // ── TagList helpers ──
+  const getTagList = (tagId, type) =>
+    data.tagLists.find((tl) => tl.tagId === tagId && tl.type === type);
+
+  const addToTagList = (tagId, type, entityId) => {
+    let tl = getTagList(tagId, type);
+    if (!tl) {
+      tl = { tagId, type, list: [] };
+      data.tagLists.push(tl);
+    }
+    if (!tl.list.includes(entityId)) {
+      tl.list.push(entityId);
+    }
+    save();
+  };
+
+  const removeFromTagList = (tagId, type, entityId) => {
+    const tl = getTagList(tagId, type);
+    if (tl) {
+      tl.list = tl.list.filter((id) => id !== entityId);
+      save();
+    }
+  };
+
+  const removeEntityFromAllTagLists = (entityId, type) => {
+    data.tagLists.forEach((tl) => {
+      if (tl.type === type) {
+        tl.list = tl.list.filter((id) => id !== entityId);
+      }
+    });
+    save();
+  };
+
+  // Sync tags to tagLists for an entity
+  const syncTagLists = (tagIds, type, entityId) => {
+    tagIds.forEach((tid) => addToTagList(tid, type, entityId));
+  };
 
   return {
     getData: () => data,
@@ -41,6 +79,7 @@ export function createDB() {
     getActivity: (id) => data.activities.find((a) => a.id === id),
     addActivity: (a) => {
       data.activities.push(a);
+      syncTagLists(a.tags, "activity", a.id);
       save();
       return a;
     },
@@ -48,21 +87,21 @@ export function createDB() {
       const i = data.activities.findIndex((a) => a.id === id);
       if (i >= 0) {
         data.activities[i] = { ...data.activities[i], ...upd };
+        if (upd.tags) {
+          removeEntityFromAllTagLists(id, "activity");
+          syncTagLists(upd.tags, "activity", id);
+        }
         save();
       }
       return data.activities[i];
     },
     deleteActivity: (id) => {
+      removeEntityFromAllTagLists(id, "activity");
       data.activities = data.activities.filter((a) => a.id !== id);
-      data.tags.forEach((t) => {
-        t.activityList = t.activityList.filter((aid) => aid !== id);
-      });
       save();
     },
     getChildren: (pid) =>
-      data.activities.filter(
-        (a) => a.parentId === pid && a.parentType === "activity"
-      ),
+      data.activities.filter((a) => a.parentId === pid && a.parentType === "activity"),
 
     // ── Tags ──
     getTags: () => data.tags,
@@ -89,11 +128,18 @@ export function createDB() {
         id: uid(),
         name,
         color: TAG_COLORS[data.tags.length % TAG_COLORS.length],
-        activityList: [],
       };
       data.tags.push(t);
       save();
       return t;
+    },
+
+    // ── TagLists ──
+    getTagLists: () => data.tagLists,
+    getTagList,
+    getEntitiesByTag: (tagId, type) => {
+      const tl = getTagList(tagId, type);
+      return tl ? tl.list : [];
     },
 
     // ── Templates ──
@@ -113,6 +159,7 @@ export function createDB() {
     getIssue: (id) => data.issues.find((i) => i.id === id),
     addIssue: (i) => {
       data.issues.push(i);
+      syncTagLists(i.tags, "issue", i.id);
       save();
       return i;
     },
@@ -120,12 +167,50 @@ export function createDB() {
       const i = data.issues.findIndex((x) => x.id === id);
       if (i >= 0) {
         data.issues[i] = { ...data.issues[i], ...upd };
+        if (upd.tags) {
+          removeEntityFromAllTagLists(id, "issue");
+          syncTagLists(upd.tags, "issue", id);
+        }
         save();
       }
       return data.issues[i];
     },
     deleteIssue: (id) => {
+      removeEntityFromAllTagLists(id, "issue");
       data.issues = data.issues.filter((i) => i.id !== id);
+      save();
+    },
+
+    // ── Ideas ──
+    getIdeas: () => data.ideas,
+    getIdea: (id) => data.ideas.find((i) => i.id === id),
+    addIdea: (i) => {
+      data.ideas.push(i);
+      syncTagLists(i.tags, "idea", i.id);
+      save();
+      return i;
+    },
+    updateIdea: (id, upd) => {
+      const i = data.ideas.findIndex((x) => x.id === id);
+      if (i >= 0) {
+        data.ideas[i] = { ...data.ideas[i], ...upd };
+        if (upd.tags) {
+          removeEntityFromAllTagLists(id, "idea");
+          syncTagLists(upd.tags, "idea", id);
+        }
+        save();
+      }
+      return data.ideas[i];
+    },
+    deleteIdea: (id) => {
+      removeEntityFromAllTagLists(id, "idea");
+      // Remove idea from issues that reference it
+      data.issues.forEach((issue) => {
+        if (issue.linkedIdeas && issue.linkedIdeas.includes(id)) {
+          issue.linkedIdeas = issue.linkedIdeas.filter((iid) => iid !== id);
+        }
+      });
+      data.ideas = data.ideas.filter((i) => i.id !== id);
       save();
     },
 
