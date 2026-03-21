@@ -63,4 +63,4 @@ Los datos se guardan en `localStorage` del navegador.
 npm run build
 # Output en dist/ — deploy a Vercel, Netlify, o cualquier hosting estático
 ```
-# Flowtrack
+
