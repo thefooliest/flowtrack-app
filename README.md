@@ -64,3 +64,4 @@ npm run build
 # Output en dist/ — deploy a Vercel, Netlify, o cualquier hosting estático
 ```
 
+just a test
