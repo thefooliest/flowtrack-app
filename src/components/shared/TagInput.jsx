@@ -28,16 +28,21 @@ export default function TagInput({ db, selectedTags, onChange }) {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && input.trim()) {
-      e.preventDefault();
-      const tag = db.findOrCreateTag(input.trim());
-      addTag(tag);
-    }
+    
     if (e.key === "Backspace" && input === "" && selectedTags.length > 0) {
       removeTag(selectedTags[selectedTags.length - 1].id);
     }
   };
+  const handleChange = (e) =>{
+    if(e.target.value.at(-1)===','){
+      const tag = db.findOrCreateTag(input.trim());
+      addTag(tag);
+    }else{
+      setInput(e.target.value);
+    }
 
+
+  };
   return (
     <div>
       <div className="tag-input-area" onClick={() => inputRef.current?.focus()}>
@@ -47,9 +52,9 @@ export default function TagInput({ db, selectedTags, onChange }) {
         <input
           ref={inputRef}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {handleChange(e)}}
           onKeyDown={handleKeyDown}
-          placeholder={selectedTags.length ? "" : "Escribe y presiona Enter..."}
+          placeholder={selectedTags.length ? "" : "Escribe y presiona la tecla coma..."}
         />
       </div>
       {(input.length > 0 || suggestions.length > 0) && suggestions.length > 0 && (

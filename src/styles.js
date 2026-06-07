@@ -87,10 +87,10 @@ body, #root {
   display: flex; gap: 2px; padding: 10px 12px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-primary); position: sticky; top: 65px; z-index: 99;
-  overflow-x: auto;
+  overflow-x: auto; white-space: nowrap;
 }
 .nav-item {
-  flex: 1; padding: 9px 4px; text-align: center;
+  flex-shrink: 0; padding: 9px 12px; text-align: center;
   font-size: 0.72rem; font-weight: 500; color: var(--text-muted);
   background: none; border: none; border-radius: var(--radius-sm);
   cursor: pointer; transition: all var(--transition); font-family: var(--font-display);
@@ -129,7 +129,7 @@ body, #root {
 }
 .card-children-count { font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
 .fab {
-  position: fixed; bottom: 24px; right: calc(50% - 220px);
+  position: fixed; bottom: 50px; right: calc(50% - 220px);
   width: 56px; height: 56px; border-radius: 50%;
   background: var(--accent); color: var(--bg-primary); border: none;
   font-size: 1.8rem; font-weight: 300; cursor: pointer;
